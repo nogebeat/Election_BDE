@@ -1,0 +1,15 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Score {
+  id           Int      @id @default(autoincrement())
+  olympusScore Int      @default(0)
+  beesScore    Int      @default(0)
+  totalVotes   Int      @default(0) // Optional tracking
+}

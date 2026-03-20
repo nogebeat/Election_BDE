@@ -1,0 +1,25 @@
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - DATABASE_URL=file:./dev.db
+    volumes:
+      - ./backend/prisma:/app/prisma
+      - ./backend/dev.db:/app/dev.db
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:5173"
+    depends_on:
+      - backend
+    environment:
+      - CHOKIDAR_USEPOLLING=true
