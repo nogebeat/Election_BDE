@@ -1,5 +1,16 @@
 
 services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: election
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
   backend:
     build:
       context: ./backend
@@ -8,10 +19,12 @@ services:
       - "3001:3001"
     environment:
       - PORT=3001
-      - DATABASE_URL=file:./dev.db
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/election
+      - JWT_SECRET=supers3cr3t_bde_el3ct1on_k3y
+    depends_on:
+      - db
     volumes:
       - ./backend/prisma:/app/prisma
-      - ./backend/dev.db:/app/dev.db
 
   frontend:
     build:
@@ -23,3 +36,6 @@ services:
       - backend
     environment:
       - CHOKIDAR_USEPOLLING=true
+
+volumes:
+  postgres_data:

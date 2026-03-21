@@ -3,8 +3,10 @@ FROM node:20-alpine
 WORKDIR /app
 
 # Install dependencies separately to leverage Docker cache
+RUN apk add --no-cache openssl
+RUN npm install -g tsx
 COPY package*.json ./
-RUN npm install
+RUN npm install --no-fund --no-audit
 
 # Copy application source
 COPY . .
