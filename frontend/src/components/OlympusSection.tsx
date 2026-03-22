@@ -15,89 +15,60 @@ export const OlympusSection: React.FC<Props> = ({ ratings, onRatingChange, disab
         const handleMouseMove = (e: MouseEvent) => {
             if (!sectionRef.current) return;
             const rect = sectionRef.current.getBoundingClientRect();
-            // Smoother parallax
-            const x = (e.clientX - rect.left - rect.width / 2) / 25;
-            const y = (e.clientY - rect.top - rect.height / 2) / 25;
-            setMousePos({ x, y });
+            setMousePos({
+                x: (e.clientX - rect.left - rect.width / 2) / 25,
+                y: (e.clientY - rect.top - rect.height / 2) / 25,
+            });
         };
-
         window.addEventListener('mousemove', handleMouseMove);
         return () => window.removeEventListener('mousemove', handleMouseMove);
     }, []);
 
     return (
-        <div
-            ref={sectionRef}
-            className="relative w-full h-full bg-olympusBg flex flex-col items-center justify-center overflow-hidden"
-        >
-            {/* Ambient Background Glow */}
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(228,192,66,0.05)_0%,transparent_70%)] opacity-80 pointer-events-none" />
+        <div ref={sectionRef}
+            className="relative w-full min-h-[420px] lg:min-h-full flex flex-col items-center justify-center py-8 px-4 overflow-hidden bg-olympusBg">
+            {/* Glow bg */}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(228,192,66,0.05)_0%,transparent_70%)] pointer-events-none" />
+            <div className="absolute w-[250px] md:w-[400px] h-[250px] md:h-[400px] rounded-full opacity-15 blur-[60px] pointer-events-none"
+                style={{ background: 'radial-gradient(circle, #E4C042 0%, transparent 70%)', transform: `translate(${-mousePos.x*1.5}px, ${-mousePos.y*1.5}px)`, transition: 'transform 0.1s ease-out' }} />
 
-            {/* Floating Parallax Effects */}
-            <div
-                className="absolute w-[500px] h-[500px] rounded-full opacity-15 blur-[60px]"
-                style={{
-                    background: 'radial-gradient(circle, #E4C042 0%, transparent 70%)',
-                    transform: `translate(${-mousePos.x * 1.5}px, ${-mousePos.y * 1.5}px)`,
-                    transition: 'transform 0.1s ease-out'
-                }}
-            />
-
-            {/* Floating Laurel SVGs */}
-            <div
-                className="absolute left-8 top-16 opacity-30 animate-float"
-                style={{
-                    transform: `translate(${-mousePos.x * 2}px, ${-mousePos.y * 2}px)`,
-                    transition: 'transform 0.1s ease-out'
-                }}
-            >
-                <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="#E4C042" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="animate-pulse-gold">
+            {/* Décor flottant — masqué sur petit écran */}
+            <div className="hidden md:block absolute left-6 top-12 opacity-25 animate-float"
+                style={{ transform: `translate(${-mousePos.x*2}px, ${-mousePos.y*2}px)`, transition: 'transform 0.1s ease-out' }}>
+                <svg width="70" height="70" viewBox="0 0 24 24" fill="none" stroke="#E4C042" strokeWidth="1">
                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                 </svg>
             </div>
 
-            <div
-                className="absolute right-12 bottom-32 opacity-25 animate-float-delayed"
-                style={{
-                    transform: `translate(${-mousePos.x * 1.2}px, ${-mousePos.y * 1.2}px)`,
-                    transition: 'transform 0.1s ease-out'
-                }}
-            >
-                <svg width="160" height="160" viewBox="0 0 24 24" fill="none" stroke="#E4C042" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="animate-pulse-gold" style={{ animationDelay: '1s' }}>
-                    <path d="M11 20A7 7 0 0 1 4 13v-5l7-3 7 3v5a7 7 0 0 1-7 7z" />
-                </svg>
+            {/* Logo */}
+            <div className="z-10 mb-4 w-20 h-20 sm:w-28 sm:h-28 lg:w-32 lg:h-32 rounded-full overflow-hidden border-[3px] border-olympusGold shadow-[0_0_25px_rgba(228,192,66,0.4)] transition-transform hover:scale-105 flex-shrink-0">
+                <img src="/logo/olympus.jpeg" alt="Olympus" className="w-full h-full object-cover" />
             </div>
 
-            <div className="z-10 mb-6 w-40 h-40 rounded-full overflow-hidden border-[3px] border-olympusGold shadow-[0_0_35px_rgba(228,192,66,0.4)] transition-transform duration-700 hover:scale-105">
-                <img src="/logo/olympus.jpeg" alt="Olympus Logo" className="w-full h-full object-cover" />
-            </div>
-            
-            <h1 className="z-10 text-5xl md:text-7xl font-olympus text-olympusGold mb-2 tracking-widest text-center text-glow-gold">
+            <h1 className="z-10 text-3xl sm:text-4xl lg:text-6xl font-olympus text-olympusGold mb-1 tracking-widest text-center text-glow-gold">
                 OLYMPUS
             </h1>
-            <p className="z-10 text-olympusGold/80 font-base text-lg mb-10 max-w-sm text-center font-light tracking-wide">
+            <p className="z-10 text-olympusGold/60 font-base text-xs sm:text-sm mb-6 max-w-xs text-center tracking-wide">
                 Wisdom, Strategy, and the Golden Age.
             </p>
 
-            {/* Pro Max Glassmorphism Rating Block */}
-            <div className="z-10 glass-panel-gold p-6 rounded-3xl flex flex-col items-center min-w-[300px]">
-                {['Bouffe', 'Ambiance', 'Projets', 'Respect'].map((crit) => (
+            {disabled && (
+                <div className="z-10 mb-4 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-white/40 text-[10px] uppercase tracking-widest font-semibold">
+                    {ratings['Bouffe'] > 0 ? '✓ Vote enregistré' : '🔒 Vote non disponible'}
+                </div>
+            )}
+
+            {/* Rating panel */}
+            <div className="z-10 glass-panel-gold p-4 sm:p-5 rounded-3xl flex flex-col items-center w-full max-w-xs">
+                {['Bouffe', 'Ambiance', 'Projets', 'Respect'].map(crit => (
                     <StarRating
-                        key={crit}
-                        label={crit}
-                        value={ratings[crit] || 0}
-                        onChange={(val) => onRatingChange(crit, val)}
+                        key={crit} label={crit} value={ratings[crit] || 0}
+                        onChange={val => onRatingChange(crit, val)}
                         disabled={disabled}
-                        activeColor="#E4C042"
-                        inactiveColor="rgba(228, 192, 66, 0.15)"
+                        activeColor="#E4C042" inactiveColor="rgba(228,192,66,0.15)"
                     />
                 ))}
             </div>
-
-            <button className="z-10 mt-8 text-olympusGold/90 hover:text-olympusGold hover:text-glow-gold font-base text-sm uppercase tracking-widest transition-all duration-300 font-semibold drop-shadow-sm">
-                Détails de notation
-            </button>
         </div>
     );
 };
-

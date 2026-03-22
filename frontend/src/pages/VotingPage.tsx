@@ -3,35 +3,35 @@ import { useNavigate, Link } from 'react-router-dom';
 import { OlympusSection } from '../components/OlympusSection';
 import { BeesSection } from '../components/BeesSection';
 import { ScoreBoard } from '../components/ScoreBoard';
-import { ShieldAlert, BarChart2 } from 'lucide-react';
+import { RadarChart } from '../components/RadarChart';
+import { ShieldAlert, BarChart2, LogOut, CheckCircle, XCircle, Loader, Lock } from 'lucide-react';
 import type { Day } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-const criteriaKeys = ['Bouffe', 'Ambiance', 'Projets', 'Respect'];
-const emptyRatings = () => criteriaKeys.reduce((acc, k) => ({ ...acc, [k]: 0 }), {} as Record<string, number>);
-const DAY_NUMBER: Record<string, number> = { J1: 1, J2: 2, J3: 3, J4: 4, J5: 5 };
+const CRITERIA = ['Bouffe', 'Ambiance', 'Projets', 'Respect'];
+const empty = () => CRITERIA.reduce((a, k) => ({ ...a, [k]: 0 }), {} as Record<string, number>);
+const DAY_NUM: Record<string, number> = { J1: 1, J2: 2, J3: 3, J4: 4, J5: 5 };
+
+type Status = 'idle' | 'loading' | 'success' | 'error';
 
 export const VotingPage: React.FC = () => {
   const [selectedDay, setSelectedDay] = useState<Day>('J1');
   const [olympusDays, setOlympusDays] = useState<Record<string, Record<string, number>>>({
-    J1: emptyRatings(), J2: emptyRatings(), J3: emptyRatings(), J4: emptyRatings(), J5: emptyRatings(),
+    J1: empty(), J2: empty(), J3: empty(), J4: empty(), J5: empty(),
   });
   const [beesDays, setBeesDays] = useState<Record<string, Record<string, number>>>({
-    J1: emptyRatings(), J2: emptyRatings(), J3: emptyRatings(), J4: emptyRatings(), J5: emptyRatings(),
+    J1: empty(), J2: empty(), J3: empty(), J4: empty(), J5: empty(),
   });
-
   const [votedDays, setVotedDays] = useState<Set<number>>(new Set());
-  // currentDay = numéro du jour autorisé aujourd'hui (1-5), null = vote fermé
   const [currentDay, setCurrentDay] = useState<number | null>(null);
-  const [submitStatus, setSubmitStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
-  const [submitMessage, setSubmitMessage] = useState('');
+  const [status, setStatus] = useState<Status>('idle');
+  const [message, setMessage] = useState('');
 
   const isAdmin = localStorage.getItem('role') === 'ADMIN';
   const navigate = useNavigate();
 
-  // Charge les votes existants + le jour actuel autorisé
   useEffect(() => {
-    const fetchMyVotes = async () => {
+    (async () => {
       try {
         const token = localStorage.getItem('token');
         const res = await fetch(`${API_URL}/api/votes/my-votes`, {
@@ -39,177 +39,233 @@ export const VotingPage: React.FC = () => {
         });
         if (!res.ok) return;
         const data = await res.json();
-        const days = new Set<number>(data.votes.map((v: any) => v.day));
-        setVotedDays(days);
-
-        // currentDay vient du backend (calculé selon VOTE_START_DATE ou jour semaine)
-        if (data.currentDay !== null && data.currentDay !== undefined) {
-          const dayKey = `J${data.currentDay}` as Day;
+        setVotedDays(new Set<number>(data.votes.map((v: any) => v.day)));
+        if (data.currentDay != null) {
           setCurrentDay(data.currentDay);
-          setSelectedDay(dayKey); // Auto-sélectionne le bon jour
-        } else {
-          setCurrentDay(null);
+          setSelectedDay(`J${data.currentDay}` as Day);
         }
-      } catch {
-        // silencieux
-      }
-    };
-    fetchMyVotes();
+      } catch { /* silencieux */ }
+    })();
   }, []);
 
-  const getGlobalRatings = (daysState: Record<string, Record<string, number>>) => {
-    const global = emptyRatings();
-    Object.keys(daysState).forEach(dk => {
-      criteriaKeys.forEach(k => { global[k] += daysState[dk][k] || 0; });
-    });
-    return global;
+  const globalRatings = (s: Record<string, Record<string, number>>) => {
+    const g = empty();
+    Object.keys(s).forEach(dk => CRITERIA.forEach(k => { g[k] += s[dk][k] || 0; }));
+    return g;
   };
 
-  const currentOlympusRatings = selectedDay === 'Global' ? getGlobalRatings(olympusDays) : olympusDays[selectedDay];
-  const currentBeesRatings    = selectedDay === 'Global' ? getGlobalRatings(beesDays)    : beesDays[selectedDay];
-  const olympusScore = criteriaKeys.reduce((s, k) => s + (currentOlympusRatings[k] || 0), 0);
-  const beesScore    = criteriaKeys.reduce((s, k) => s + (currentBeesRatings[k] || 0), 0);
-  const totalLimit   = selectedDay === 'Global' ? 200 : 40;
-  const radarMaxVal  = selectedDay === 'Global' ? 50  : 10;
+  const curO = selectedDay === 'Global' ? globalRatings(olympusDays) : olympusDays[selectedDay];
+  const curB = selectedDay === 'Global' ? globalRatings(beesDays)    : beesDays[selectedDay];
+  const oScore = CRITERIA.reduce((s, k) => s + (curO[k] || 0), 0);
+  const bScore = CRITERIA.reduce((s, k) => s + (curB[k] || 0), 0);
+  const limit  = selectedDay === 'Global' ? 200 : 40;
+  const maxR   = selectedDay === 'Global' ? 50  : 10;
 
-  // Le jour affiché est-il modifiable ?
-  const selectedDayNum  = DAY_NUMBER[selectedDay] ?? null;
-  const isCurrentDay    = selectedDayNum !== null && selectedDayNum === currentDay;
-  const alreadyVoted    = selectedDayNum !== null && votedDays.has(selectedDayNum);
-  const canVote         = isCurrentDay && !alreadyVoted && selectedDay !== 'Global';
+  const dayNum     = DAY_NUM[selectedDay] ?? null;
+  const isToday    = dayNum !== null && dayNum === currentDay;
+  const voted      = dayNum !== null && votedDays.has(dayNum);
+  const canVote    = isToday && !voted && selectedDay !== 'Global';
 
-  const handleRatingChange = (team: 'olympus' | 'bees', criteria: string, value: number) => {
+  const onRate = (team: 'olympus' | 'bees', k: string, v: number) => {
     if (!canVote) return;
-    if (team === 'olympus') {
-      setOlympusDays(prev => ({ ...prev, [selectedDay]: { ...prev[selectedDay], [criteria]: value } }));
-    } else {
-      setBeesDays(prev => ({ ...prev, [selectedDay]: { ...prev[selectedDay], [criteria]: value } }));
-    }
+    if (team === 'olympus') setOlympusDays(p => ({ ...p, [selectedDay]: { ...p[selectedDay], [k]: v } }));
+    else                    setBeesDays(p => ({ ...p, [selectedDay]: { ...p[selectedDay], [k]: v } }));
   };
 
-  const handleSubmitVotes = async () => {
-    if (!canVote || currentDay === null) return;
-
-    const oRatings = olympusDays[selectedDay];
-    const bRatings = beesDays[selectedDay];
-    const allRated = criteriaKeys.every(k => (oRatings[k] >= 1) && (bRatings[k] >= 1));
-    if (!allRated) {
-      setSubmitStatus('error');
-      setSubmitMessage('Notez tous les critères (1-10) pour les deux listes.');
-      setTimeout(() => setSubmitStatus('idle'), 3000);
-      return;
+  const handleSubmit = async () => {
+    if (!canVote || !currentDay) return;
+    const oR = olympusDays[selectedDay], bR = beesDays[selectedDay];
+    if (!CRITERIA.every(k => oR[k] >= 1 && bR[k] >= 1)) {
+      setStatus('error'); setMessage('Notez tous les critères (1–10) pour les deux listes.');
+      setTimeout(() => setStatus('idle'), 3000); return;
     }
-
-    setSubmitStatus('loading');
+    setStatus('loading');
     const token = localStorage.getItem('token');
-
-    const postVote = async (listName: string, ratings: Record<string, number>) => {
+    const post = async (listName: string, r: Record<string, number>) => {
       const res = await fetch(`${API_URL}/api/votes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          listName, day: currentDay,
-          scoreBouffe:   ratings['Bouffe'],
-          scoreAmbiance: ratings['Ambiance'],
-          scoreProjets:  ratings['Projets'],
-          scoreRespect:  ratings['Respect'],
-        }),
+        body: JSON.stringify({ listName, day: currentDay, scoreBouffe: r.Bouffe, scoreAmbiance: r.Ambiance, scoreProjets: r.Projets, scoreRespect: r.Respect }),
       });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Erreur serveur');
-      }
+      if (!res.ok) { const e = await res.json(); throw new Error(e.error); }
     };
-
     try {
-      await postVote('olympus', oRatings);
-      await postVote('bees', bRatings);
-
-      setSubmitStatus('success');
-      setSubmitMessage(`Votes du J${currentDay} enregistrés !`);
-      setVotedDays(prev => new Set([...prev, currentDay]));
-      setTimeout(() => setSubmitStatus('idle'), 3000);
-    } catch (err: any) {
-      setSubmitStatus('error');
-      setSubmitMessage(err.message);
-      if (err.message?.includes('déjà voté')) {
-        setVotedDays(prev => new Set([...prev, currentDay]));
-      }
-      setTimeout(() => setSubmitStatus('idle'), 4000);
+      await post('olympus', oR); await post('bees', bR);
+      setStatus('success'); setMessage(`Votes J${currentDay} enregistrés !`);
+      setVotedDays(p => new Set([...p, currentDay]));
+      setTimeout(() => setStatus('idle'), 3000);
+    } catch (e: any) {
+      setStatus('error'); setMessage(e.message);
+      if (e.message?.includes('déjà voté')) setVotedDays(p => new Set([...p, currentDay]));
+      setTimeout(() => setStatus('idle'), 4000);
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('email');
-    localStorage.removeItem('role');
-    navigate('/login');
+  const logout = () => { ['token','email','role'].forEach(k => localStorage.removeItem(k)); navigate('/login'); };
+
+  // ── Barre de navigation jours ──────────────────────────────────────────────
+  const DayNav = () => (
+    <div className="flex bg-black/60 backdrop-blur-xl p-1 rounded-full border border-white/10 gap-0.5 overflow-x-auto scrollbar-none">
+      {(['J1','J2','J3','J4','J5','Global'] as Day[]).map(day => {
+        const dn = DAY_NUM[day];
+        const isV = dn && votedDays.has(dn);
+        const isTd = dn && dn === currentDay;
+        const isFu = dn && currentDay !== null && dn > currentDay;
+        return (
+          <button key={day} onClick={() => setSelectedDay(day)}
+            className={`relative flex-shrink-0 px-3 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase transition-all duration-200
+              ${selectedDay === day ? 'bg-white text-black scale-105' : isFu ? 'text-white/25' : 'text-white/50 hover:text-white hover:bg-white/10'}`}>
+            {day}
+            {isV  && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-green-400 rounded-full border border-black" />}
+            {isTd && !isV && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-olympusGold rounded-full border border-black animate-pulse" />}
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  // ── Bouton soumettre (réutilisé mobile + desktop) ──────────────────────────
+  const SubmitBtn = ({ full = false }) => {
+    const label = currentDay === null ? '🔒 Vote fermé'
+      : voted ? `✓ J${currentDay} déjà voté`
+      : !isToday && selectedDay !== 'Global' ? `🔒 Seulement le J${currentDay}`
+      : selectedDay === 'Global' ? 'Vue globale'
+      : status === 'loading' ? 'Enregistrement...'
+      : `Valider les votes du ${selectedDay}`;
+    const disabled = !canVote || status === 'loading';
+    return (
+      <div className={`flex flex-col gap-2 ${full ? 'w-full' : ''}`}>
+        <button onClick={handleSubmit} disabled={disabled}
+          className={`${full ? 'w-full' : 'px-6'} py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all border flex items-center justify-center gap-2
+            ${voted ? 'bg-green-500/10 border-green-500/30 text-green-300'
+              : disabled ? 'bg-white/5 border-white/10 text-white/30 cursor-not-allowed'
+              : 'glass-button text-white hover:scale-[1.02] active:scale-95'}`}>
+          {status === 'loading' && <Loader size={13} className="animate-spin" />}
+          {voted && <CheckCircle size={13} className="text-green-400" />}
+          {!canVote && !voted && currentDay !== null && selectedDay !== 'Global' && <Lock size={13} />}
+          {label}
+        </button>
+        {status !== 'idle' && message && (
+          <p className={`text-center text-xs font-semibold flex items-center justify-center gap-1 ${status === 'success' ? 'text-green-300' : 'text-red-300'}`}>
+            {status === 'success' ? <CheckCircle size={11} /> : <XCircle size={11} />}
+            {message}
+          </p>
+        )}
+      </div>
+    );
   };
 
   return (
-    <div className="w-screen h-screen flex flex-col md:flex-row overflow-hidden bg-[#050505] relative">
+    <div className="min-h-screen w-full bg-[#050505] flex flex-col text-white">
 
-      {/* Top bar */}
-      <div className="absolute top-4 right-4 z-[100] flex gap-3 items-center">
-        <Link to="/evaluation" className="glass-button px-4 py-2 rounded-full text-white/80 hover:text-white text-xs font-bold uppercase tracking-widest flex items-center gap-2 border border-white/5 bg-black/50 backdrop-blur-md">
-          <BarChart2 size={16} className="text-beesYellow" />
-          Évaluation
-        </Link>
-        {isAdmin && (
-          <Link to="/admin" className="glass-button px-4 py-2 rounded-full text-white/80 hover:text-white text-xs font-bold uppercase tracking-widest flex items-center gap-2 border border-white/5 bg-black/50 backdrop-blur-md">
-            <ShieldAlert size={16} className="text-olympusGold" />
-            Admin
+      {/* ── Header sticky ───────────────────────────────────────────── */}
+      <header className="sticky top-0 z-50 bg-[#050505]/90 backdrop-blur-xl border-b border-white/5 px-3 sm:px-5 py-3 flex items-center gap-3">
+        {/* Actions gauche */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <Link to="/evaluation" className="glass-button p-2 sm:px-3 sm:py-1.5 rounded-full text-white/60 hover:text-white border border-white/5 flex items-center gap-1.5">
+            <BarChart2 size={13} className="text-beesYellow" />
+            <span className="hidden sm:inline text-[10px] font-bold uppercase tracking-widest">Évaluation</span>
           </Link>
-        )}
-        <button onClick={logout} className="text-white/30 hover:text-white/60 text-xs uppercase tracking-widest transition-colors font-semibold">
-          Logout
-        </button>
-      </div>
+          {isAdmin && (
+            <Link to="/admin" className="glass-button p-2 sm:px-3 sm:py-1.5 rounded-full text-white/60 hover:text-white border border-white/5 flex items-center gap-1.5">
+              <ShieldAlert size={13} className="text-olympusGold" />
+              <span className="hidden sm:inline text-[10px] font-bold uppercase tracking-widest">Admin</span>
+            </Link>
+          )}
+        </div>
 
-      {/* Banner "vote fermé" si week-end ou hors période */}
+        {/* Nav jours — centre flex */}
+        <div className="flex-1 flex justify-center overflow-hidden">
+          <DayNav />
+        </div>
+
+        {/* Logout droite */}
+        <button onClick={logout} className="flex-shrink-0 text-white/30 hover:text-white/70 transition-colors p-1">
+          <LogOut size={15} />
+        </button>
+      </header>
+
+      {/* ── Banner vote fermé ────────────────────────────────────────── */}
       {currentDay === null && (
-        <div className="absolute top-0 left-0 right-0 z-[90] flex justify-center pt-4 px-4">
-          <div className="glass-button border border-white/10 bg-black/60 backdrop-blur-xl px-6 py-3 rounded-full text-white/60 text-xs uppercase tracking-widest font-semibold">
-            🔒 Vote fermé aujourd'hui — revenez un jour de semaine
-          </div>
+        <div className="mx-4 mt-3 px-4 py-2.5 rounded-2xl bg-white/5 border border-white/10 text-center text-white/40 text-[10px] uppercase tracking-widest font-semibold">
+          🔒 Vote fermé — l'admin ouvrira le vote du jour prochainement
         </div>
       )}
 
-      {/* Olympus Side */}
-      <div className="w-full h-1/2 md:w-1/2 md:h-full relative overflow-y-auto md:overflow-hidden">
-        <OlympusSection
-          ratings={currentOlympusRatings}
-          onRatingChange={(crit, val) => handleRatingChange('olympus', crit, val)}
-          disabled={!canVote}
-        />
+      {/* ══════════════════════════════════════════════════════════════
+          LAYOUT MOBILE / TABLETTE  (< lg)
+          Colonne scrollable : scoreboard compact → Olympus → Bees
+      ═══════════════════════════════════════════════════════════════ */}
+      <div className="lg:hidden flex flex-col gap-0">
+
+        {/* Scoreboard compact mobile */}
+        <div className="px-4 pt-4 pb-2">
+          <div className="glass-scoreboard rounded-3xl p-4 sm:p-5 flex flex-col gap-4">
+            {/* VS scores */}
+            <div className="flex items-center">
+              <div className="flex-1 flex flex-col items-center">
+                <span className="text-[9px] text-olympusGold/60 uppercase tracking-widest font-bold mb-1">Olympus</span>
+                <span className="text-5xl font-black text-olympusGold text-glow-gold">{oScore}</span>
+              </div>
+              <div className="flex flex-col items-center px-3 gap-2">
+                <span className="text-xs font-black text-white/30 tracking-widest">VS</span>
+                <div className="w-16 h-1 bg-white/10 rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-olympusGold to-beesYellow transition-all duration-700"
+                    style={{ width: `${Math.min(((oScore+bScore)/limit)*100,100)}%` }} />
+                </div>
+                <span className="text-[9px] text-white/20 uppercase">{oScore+bScore}/{limit}</span>
+              </div>
+              <div className="flex-1 flex flex-col items-center">
+                <span className="text-[9px] text-beesYellow/60 uppercase tracking-widest font-bold mb-1">The Bees</span>
+                <span className="text-5xl font-black text-beesYellow text-glow-yellow">{bScore}</span>
+              </div>
+            </div>
+
+            {/* Radar compact */}
+            <div className="flex justify-center">
+              <RadarChart olympusData={CRITERIA.map(k => curO[k]||0)} beesData={CRITERIA.map(k => curB[k]||0)} maxVal={maxR} size={220} />
+            </div>
+
+            {/* Bouton */}
+            <SubmitBtn full />
+          </div>
+        </div>
+
+        {/* Sections Olympus + Bees empilées */}
+        <div className="flex flex-col sm:flex-row">
+          <div className="flex-1">
+            <OlympusSection ratings={curO} onRatingChange={(c,v) => onRate('olympus',c,v)} disabled={!canVote} />
+          </div>
+          <div className="flex-1">
+            <BeesSection ratings={curB} onRatingChange={(c,v) => onRate('bees',c,v)} disabled={!canVote} />
+          </div>
+        </div>
       </div>
 
-      {/* Bees Side */}
-      <div className="w-full h-1/2 md:w-1/2 md:h-full relative overflow-y-auto md:overflow-hidden">
-        <BeesSection
-          ratings={currentBeesRatings}
-          onRatingChange={(crit, val) => handleRatingChange('bees', crit, val)}
-          disabled={!canVote}
-        />
-      </div>
+      {/* ══════════════════════════════════════════════════════════════
+          LAYOUT DESKTOP  (>= lg)
+          Deux colonnes + ScoreBoard flottant centré
+      ═══════════════════════════════════════════════════════════════ */}
+      <div className="hidden lg:flex flex-1 relative" style={{ height: 'calc(100vh - 57px)' }}>
+        <div className="w-1/2 h-full overflow-y-auto">
+          <OlympusSection ratings={curO} onRatingChange={(c,v) => onRate('olympus',c,v)} disabled={!canVote} />
+        </div>
+        <div className="w-1/2 h-full overflow-y-auto">
+          <BeesSection ratings={curB} onRatingChange={(c,v) => onRate('bees',c,v)} disabled={!canVote} />
+        </div>
 
-      {/* ScoreBoard */}
-      <ScoreBoard
-        olympusScore={olympusScore}
-        beesScore={beesScore}
-        totalLimit={totalLimit}
-        radarMaxVal={radarMaxVal}
-        olympusRatings={currentOlympusRatings}
-        beesRatings={currentBeesRatings}
-        selectedDay={selectedDay}
-        onSelectDay={setSelectedDay}
-        onSubmit={handleSubmitVotes}
-        submitStatus={submitStatus}
-        submitMessage={submitMessage}
-        alreadyVoted={alreadyVoted}
-        votedDays={votedDays}
-        currentDay={currentDay}
-      />
+        {/* ScoreBoard flottant */}
+        <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-40">
+          <div className="pointer-events-auto">
+            <ScoreBoard
+              olympusScore={oScore} beesScore={bScore} totalLimit={limit} radarMaxVal={maxR}
+              olympusRatings={curO} beesRatings={curB} selectedDay={selectedDay} onSelectDay={setSelectedDay}
+              onSubmit={handleSubmit} submitStatus={status} submitMessage={message}
+              alreadyVoted={voted} votedDays={votedDays} currentDay={currentDay} hideNav
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

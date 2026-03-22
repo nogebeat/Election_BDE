@@ -127,7 +127,7 @@ export const Login: React.FC = () => {
 
   return (
     <div className="w-screen h-screen flex flex-col items-center justify-center bg-[#050505] text-white">
-      <div className="glass-panel-gold p-10 rounded-3xl w-full max-w-md flex flex-col items-center border border-white/10 shadow-2xl relative overflow-hidden">
+      <div className="glass-panel-gold p-6 sm:p-10 rounded-3xl w-full max-w-md flex flex-col items-center border border-white/10 shadow-2xl relative overflow-hidden mx-4">
         {/* Glow décoratif */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[200%] h-[100px] bg-olympusGold/20 blur-[80px]" />
 

@@ -275,7 +275,7 @@ export const GlobalEvaluation: React.FC = () => {
                                 <Star size={14} />
                                 Scores détaillés par clan
                             </h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
                                 {olympus && (
                                     <ClanCard
                                         data={olympus}
@@ -332,7 +332,7 @@ export const GlobalEvaluation: React.FC = () => {
 
                         {/* ── Radar chart ───────────────────────────────── */}
                         {data.radarData.length > 0 && (
-                            <section className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                 <div>
                                     <h2 className="text-xs uppercase tracking-[0.4em] text-white/40 mb-6 flex items-center gap-3">
                                         <Award size={14} />

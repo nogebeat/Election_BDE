@@ -76,12 +76,12 @@ export const AdminDashboard: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#050505] text-white p-6 md:p-10 overflow-x-hidden">
+        <div className="min-h-screen bg-[#050505] text-white p-4 md:p-10 overflow-x-hidden">
 
             {/* Header */}
             <header className="mb-10 flex items-start justify-between">
                 <div>
-                    <h1 className="text-4xl md:text-5xl font-black uppercase tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-olympusGold via-white to-beesYellow">
+                    <h1 className="text-2xl md:text-5xl font-black uppercase tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-olympusGold via-white to-beesYellow">
                         BDE Arbitrator Control
                     </h1>
                     <p className="text-white/50 mt-2 tracking-wide">Interface de suivi et gestion des votes.</p>
@@ -158,7 +158,7 @@ export const AdminDashboard: React.FC = () => {
                 <div className="text-white/40 text-center py-10 uppercase tracking-widest text-sm">Chargement...</div>
             ) : (
                 <>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-8">
                         <div className="glass-panel-dark p-6 rounded-2xl flex items-center justify-between border border-white/10 shadow-2xl transition-transform hover:-translate-y-1">
                             <div>
                                 <p className="text-xs uppercase tracking-widest text-white/50 mb-1">Total Votants</p>
@@ -195,7 +195,7 @@ export const AdminDashboard: React.FC = () => {
                     </div>
 
                     {/* Charts */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                         <div className="glass-panel-dark p-6 rounded-3xl border border-white/5 flex flex-col items-center">
                             <h3 className="text-sm uppercase tracking-widest text-white/60 mb-6 font-semibold w-full">Métriques Globales (Moyennes)</h3>
                             <div className="w-full h-[350px]">
