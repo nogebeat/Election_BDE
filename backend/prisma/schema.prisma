@@ -57,3 +57,11 @@ model Vote {
 
   @@unique([userId, day], name: "userId_day")
 }
+
+// Jour de vote actif, géré par l'admin
+model VoteConfig {
+  id         String   @id @default("singleton")
+  activeDay  Int?     // 1-5, null = vote fermé
+  updatedAt  DateTime @updatedAt
+  updatedBy  String?  // email de l'admin
+}

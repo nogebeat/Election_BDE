@@ -8,7 +8,7 @@ import { sendVerificationEmail } from '../lib/mailer';
 const router = Router();
 const prisma = new PrismaClient();
 
-const ADMIN_EMAILS = ['akhenaton.dandjinou@epitech.eu'];
+const ADMIN_EMAILS = ['akhenaton.dandjinou@epitech.eu', "james.gbetchedji@epitech.eu"];
 const ALLOWED_DOMAIN = '@epitech.eu';
 
 function getRole(email: string): 'ADMIN' | 'STUDENT' {

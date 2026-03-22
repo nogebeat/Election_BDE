@@ -7,22 +7,17 @@ interface Props {
     activeColor: string;
     inactiveColor: string;
     maxStars?: number;
+    disabled?: boolean;
 }
 
 export const StarRating: React.FC<Props> = ({
-    label,
-    value,
-    onChange,
-    activeColor,
-    inactiveColor,
-    maxStars = 10
+    label, value, onChange, activeColor, inactiveColor, maxStars = 10, disabled = false
 }) => {
     const [hoverValue, setHoverValue] = useState<number | null>(null);
-
     const displayValue = hoverValue !== null ? hoverValue : value;
 
     return (
-        <div className="flex flex-col mb-4 w-full max-w-[280px]">
+        <div className={`flex flex-col mb-4 w-full max-w-[280px] ${disabled ? 'opacity-50' : ''}`}>
             <div className="flex justify-between items-center mb-2 px-1">
                 <span className="text-sm font-base font-semibold tracking-wide uppercase" style={{ color: activeColor }}>
                     {label}
@@ -35,14 +30,14 @@ export const StarRating: React.FC<Props> = ({
                 {[...Array(maxStars)].map((_, i) => {
                     const ratingValue = i + 1;
                     const isActive = ratingValue <= displayValue;
-
                     return (
                         <button
                             key={i}
                             type="button"
-                            className="focus:outline-none transition-transform duration-300 hover:scale-125 focus:scale-110 active:scale-90"
-                            onClick={() => onChange(ratingValue)}
-                            onMouseEnter={() => setHoverValue(ratingValue)}
+                            disabled={disabled}
+                            className={`focus:outline-none transition-transform duration-300 ${disabled ? 'cursor-not-allowed' : 'hover:scale-125 focus:scale-110 active:scale-90'}`}
+                            onClick={() => !disabled && onChange(ratingValue)}
+                            onMouseEnter={() => !disabled && setHoverValue(ratingValue)}
                             onMouseLeave={() => setHoverValue(null)}
                         >
                             <svg

@@ -4,9 +4,10 @@ import { StarRating } from './StarRating';
 interface Props {
     ratings: Record<string, number>;
     onRatingChange: (criteria: string, value: number) => void;
+    disabled?: boolean;
 }
 
-export const BeesSection: React.FC<Props> = ({ ratings, onRatingChange }) => {
+export const BeesSection: React.FC<Props> = ({ ratings, onRatingChange, disabled = false }) => {
     const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
     const sectionRef = useRef<HTMLDivElement>(null);
 
@@ -86,6 +87,7 @@ export const BeesSection: React.FC<Props> = ({ ratings, onRatingChange }) => {
                         label={crit}
                         value={ratings[crit] || 0}
                         onChange={(val) => onRatingChange(crit, val)}
+                        disabled={disabled}
                         activeColor="#111111"
                         inactiveColor="rgba(0, 0, 0, 0.25)"
                     />
