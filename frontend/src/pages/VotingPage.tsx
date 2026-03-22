@@ -3,9 +3,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { OlympusSection } from '../components/OlympusSection';
 import { BeesSection } from '../components/BeesSection';
 import { ScoreBoard } from '../components/ScoreBoard';
-import { ShieldAlert } from 'lucide-react';
-
-export type Day = 'J1' | 'J2' | 'J3' | 'J4' | 'J5' | 'Global';
+import { ShieldAlert, BarChart2 } from 'lucide-react';
+import type { Day } from '../types';
 
 const criteriaKeys = ['Bouffe', 'Ambiance', 'Projets', 'Respect'];
 const emptyRatings = () => criteriaKeys.reduce((acc, key) => ({ ...acc, [key]: 0 }), {} as Record<string, number>);
@@ -83,11 +82,16 @@ export const VotingPage: React.FC = () => {
     <div className="w-screen h-screen flex flex-col md:flex-row overflow-hidden bg-[#050505] relative">
       
       {/* Absolute Admin & Tools over layer */}
-      <div className="absolute top-4 right-4 z-[100] flex gap-4 items-center">
+      <div className="absolute top-4 right-4 z-[100] flex gap-3 items-center">
+        {/* Bouton Évaluation Globale — visible par tous */}
+        <Link to="/evaluation" className="glass-button px-4 py-2 rounded-full text-white/80 hover:text-white text-xs font-bold uppercase tracking-widest flex items-center gap-2 border border-white/5 bg-black/50 backdrop-blur-md">
+            <BarChart2 size={16} className="text-beesYellow" />
+            Évaluation
+        </Link>
         {isAdmin && (
             <Link to="/admin" className="glass-button px-4 py-2 rounded-full text-white/80 hover:text-white text-xs font-bold uppercase tracking-widest flex items-center gap-2 border border-white/5 bg-black/50 backdrop-blur-md">
                 <ShieldAlert size={16} className="text-olympusGold" />
-                Dashboard Admin
+                Admin
             </Link>
         )}
         <button onClick={logout} className="text-white/30 hover:text-white/60 text-xs uppercase tracking-widest transition-colors font-semibold">

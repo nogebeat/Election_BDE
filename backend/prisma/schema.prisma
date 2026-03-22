@@ -13,11 +13,24 @@ enum Role {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  role      Role     @default(STUDENT)
-  createdAt DateTime @default(now())
-  votes     Vote[]
+  id            String         @id @default(uuid())
+  email         String         @unique
+  name          String?
+  role          Role           @default(STUDENT)
+  createdAt     DateTime       @default(now())
+  votes         Vote[]
+  oauthAccounts OauthAccount[]
+}
+
+model OauthAccount {
+  id          String   @id @default(uuid())
+  provider    String
+  providerId  String
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@unique([provider, providerId])
 }
 
 model VerificationToken {

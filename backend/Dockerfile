@@ -2,19 +2,18 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Install dependencies separately to leverage Docker cache
-RUN apk add --no-cache openssl
-RUN npm install -g tsx
+# Copie les fichiers de dépendances
 COPY package*.json ./
-RUN npm install --no-fund --no-audit
+RUN npm install
 
-# Copy application source
+# Copie le reste du code
 COPY . .
 
-# Generate Prisma Client
+# Génère le client Prisma
 RUN npx prisma generate
 
+# Expose le port
 EXPOSE 3001
 
-# Run the app in development mode
-CMD ["sh", "-c", "npx prisma db push && npm run dev"]
+# Démarre avec migration auto + serveur
+CMD ["sh", "-c", "npx prisma db push --accept-data-loss && npx tsx index.ts"]

@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { RadarChart } from './RadarChart';
-import type { Day } from '../App';
+import type { Day } from '../types';
 
 interface Props {
     olympusScore: number;

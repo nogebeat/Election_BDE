@@ -101,3 +101,104 @@ router.get('/stats', requireAuth, requireAdmin, async (req: AuthRequest, res: an
 });
 
 export default router;
+
+// ─── Endpoint évaluation globale publique (accessible à tous les connectés) ──
+router.get('/global-evaluation', async (req: any, res: any) => {
+    try {
+        const criteriaKeys = ['Bouffe', 'Ambiance', 'Projets', 'Respect'] as const;
+        type CriteriaKey = typeof criteriaKeys[number];
+
+        // Moyennes globales par liste
+        const listAverages = await prisma.vote.groupBy({
+            by: ['listName'],
+            _avg: {
+                scoreBouffe: true,
+                scoreAmbiance: true,
+                scoreProjets: true,
+                scoreRespect: true
+            },
+            _count: { userId: true }
+        });
+
+        // Moyennes par jour par liste
+        const dailyData = await prisma.vote.groupBy({
+            by: ['listName', 'day'],
+            _avg: {
+                scoreBouffe: true,
+                scoreAmbiance: true,
+                scoreProjets: true,
+                scoreRespect: true
+            }
+        });
+
+        // Nombre total de votants
+        const totalVoters = await prisma.user.count({
+            where: { votes: { some: {} } }
+        });
+
+        // Votants par jour
+        const votersPerDay = await prisma.vote.groupBy({
+            by: ['day'],
+            _count: { userId: true }
+        });
+
+        // Construction des données radar (par critère)
+        const radarData = criteriaKeys.map(criteria => {
+            const scoreKey = `score${criteria}` as `score${CriteriaKey}`;
+            const row: any = { criteria };
+            listAverages.forEach(list => {
+                row[list.listName] = Number((list._avg[scoreKey] || 0).toFixed(2));
+            });
+            return row;
+        });
+
+        // Progression journalière (score total moyen par jour)
+        const validDays = [1, 2, 3, 4, 5];
+        const lineData = validDays.map(day => {
+            const row: any = { day: `J${day}`, voters: 0 };
+            const dayVoters = votersPerDay.find(v => v.day === day);
+            row.voters = dayVoters?._count.userId || 0;
+            dailyData.filter(d => d.day === day).forEach(list => {
+                const total = criteriaKeys.reduce((sum, k) => {
+                    return sum + (list._avg[`score${k}` as `score${CriteriaKey}`] || 0);
+                }, 0);
+                row[list.listName] = Number(total.toFixed(2));
+            });
+            return row;
+        });
+
+        // Scores globaux par liste (total des 4 critères)
+        const globalScores = listAverages.map(list => {
+            const total = criteriaKeys.reduce((sum, k) => {
+                return sum + (list._avg[`score${k}` as `score${CriteriaKey}`] || 0);
+            }, 0);
+            return {
+                name: list.listName,
+                total: Number(total.toFixed(2)),
+                votes: list._count.userId,
+                details: {
+                    Bouffe: Number((list._avg.scoreBouffe || 0).toFixed(2)),
+                    Ambiance: Number((list._avg.scoreAmbiance || 0).toFixed(2)),
+                    Projets: Number((list._avg.scoreProjets || 0).toFixed(2)),
+                    Respect: Number((list._avg.scoreRespect || 0).toFixed(2)),
+                }
+            };
+        });
+
+        const winner = globalScores.length
+            ? globalScores.reduce((a, b) => a.total > b.total ? a : b)
+            : null;
+
+        res.json({
+            totalVoters,
+            globalScores,
+            winner: winner?.name || null,
+            radarData,
+            lineData,
+        });
+
+    } catch (error) {
+        console.error('Global evaluation error:', error);
+        res.status(500).json({ error: 'Impossible de charger l\'évaluation globale.' });
+    }
+});
