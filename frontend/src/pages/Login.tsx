@@ -152,14 +152,14 @@ export const Login: React.FC = () => {
 
         {/* ── Boutons OAuth ───────────────────────────────────────── */}
         <div className="w-full flex flex-col gap-3 mb-6 z-10">
-          <button
+          {/* <button
             onClick={() => handleOAuth('google')}
             disabled={loading}
             className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-all font-medium text-sm disabled:opacity-50"
           >
             <GoogleIcon />
             <span>Continuer avec Google</span>
-          </button>
+          </button> */}
 
           <button
             onClick={() => handleOAuth('github')}
