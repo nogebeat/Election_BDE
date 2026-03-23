@@ -287,8 +287,7 @@ router.get('/github/callback', async (req: any, res: any) => {
 
 // Helper — URL du backend pour les redirections OAuth
 function getBackendUrl(): string {
-    const port = process.env.PORT || 3001;
-    return `http://localhost:${port}`;
+    return process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 3001}`;
 }
 
 export default router;
