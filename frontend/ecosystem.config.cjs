@@ -5,7 +5,7 @@ module.exports = {
       script: 'npx',
       args: 'serve dist --listen 3005 --single',
       // --single : toutes les routes inconnues → index.html (nécessaire pour React Router)
-      cwd: '/var/www/election-bde/frontend',
+      cwd: './',
 
       env: {
         NODE_ENV: 'production',

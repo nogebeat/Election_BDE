@@ -4,7 +4,7 @@ module.exports = {
       name: 'election-backend',
       script: 'npx',
       args: 'tsx index.ts',
-      cwd: '/var/www/election-bde/backend',
+      cwd: './',
 
       // Variables d'environnement — chargées depuis .env par dotenv/config
       env: {
